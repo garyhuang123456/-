@@ -19,7 +19,7 @@ def create_training_data() :
         for img in os.listdir(path) :
             try:
                 new_path = os.path.join(path,img)
-                img_array = mpimg.imread(new_path,1)#, cv2.IMREAD_GRAYSCALE)
+                img_array = mpimg.imread(new_path,1)
                 new_array = cv2.resize(img_array, (img_size, img_size))
                 training_data.append([new_array, class_num])
             except Exception as e :
@@ -33,7 +33,7 @@ def create_testing_data() :
         for img in os.listdir(path) :
             try:
                 new_path = os.path.join(path,img)
-                img_array = mpimg.imread(new_path,1)#, cv2.IMREAD_GRAYSCALE)
+                img_array = mpimg.imread(new_path,1)
                 new_array = cv2.resize(img_array, (224, 224))
                 testing_data.append([new_array, class_num])
             except Exception as e :
@@ -110,12 +110,12 @@ plt.show()
 
 def prepare(filepath):
     IMG_SIZE = 224  # 50 in txt-based
-    img_array = cv2.imread(filepath)  # read in the image, convert to grayscale
+    img_array = cv2.imread(filepath)
     new_array = cv2.resize(img_array, (IMG_SIZE, IMG_SIZE))  # resize image to match model's expected sizing
     return new_array.reshape(-1, IMG_SIZE, IMG_SIZE, 3)  # return the image with shaping that TF wants.
     
 from keras.applications.vgg16 import preprocess_input, decode_predictions
-prediction = model.predict([prepare('/Users/leolin/Documents/高中專題/downloads/3/354檔案.jpg')])  # REMEMBER YOU'RE PASSING A LIST OF THINGS YOU WISH TO PREDICT
+prediction = model.predict([prepare('/Users/leolin/Documents/高中專題/downloads/3/354檔案.jpg')])  
 print (prediction)
 p=np.argmax(prediction)
 print(CATEGORIES_train[int(p)])
