@@ -1,0 +1,121 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+import os
+import cv2
+
+DATADIR = r"/Users/leolin/Documents/高中專題/downloads"
+CATEGORIES_train = ['1','2','3','4','5','6','7','8']
+CATEGORIES_test = ['test']
+
+training_data = []
+testing_data = []
+img_size=224
+def create_training_data() :
+    for category in CATEGORIES_train :
+        path = os.path.join(DATADIR,category)
+        class_num = CATEGORIES_train.index(category)
+        print(path)
+        for img in os.listdir(path) :
+            try:
+                new_path = os.path.join(path,img)
+                img_array = mpimg.imread(new_path,1)#, cv2.IMREAD_GRAYSCALE)
+                new_array = cv2.resize(img_array, (img_size, img_size))
+                training_data.append([new_array, class_num])
+            except Exception as e :
+                pass
+            
+def create_testing_data() :
+    for category in CATEGORIES_test :
+        path = os.path.join(DATADIR,category)
+        class_num = CATEGORIES_test.index(category)
+        print(path)
+        for img in os.listdir(path) :
+            try:
+                new_path = os.path.join(path,img)
+                img_array = mpimg.imread(new_path,1)#, cv2.IMREAD_GRAYSCALE)
+                new_array = cv2.resize(img_array, (224, 224))
+                testing_data.append([new_array, class_num])
+            except Exception as e :
+                pass
+                
+create_training_data()
+create_testing_data()
+
+print(len(training_data))
+print(len(testing_data))
+
+import random
+random.shuffle(training_data)
+
+x_train = []
+y_train = []
+x_test = []
+y_test = []
+for faetures,lable in training_data :
+    x_train.append(faetures)
+    y_train.append(lable)
+    
+x_train=x_train/255.0
+
+import keras
+from keras.models import Sequential
+from keras.layers import Dense, Conv2D, MaxPool2D , Flatten
+from keras.preprocessing.image import ImageDataGenerator
+from keras.layers import AveragePooling2D
+
+model = Sequential()
+model.add(Conv2D(input_shape=(224,224,3),filters=16,kernel_size=(15,15),padding="valid", activation="relu"))
+model.add(MaxPool2D(pool_size=(2,2),strides=(2,2)))
+model.add(Conv2D(filters=32, kernel_size=(10,10), padding="valid", activation="relu"))
+model.add(MaxPool2D(pool_size=(2,2),strides=(2,2)))
+model.add(Conv2D(filters=64, kernel_size=(7,7), padding="valid", activation="relu"))
+model.add(MaxPool2D(pool_size=(2,2),strides=(2,2)))
+model.add(Conv2D(filters=128, kernel_size=(4,4), padding="valid", activation="relu"))
+model.add(MaxPool2D(pool_size=(2,2),strides=(2,2)))
+model.add(Conv2D(filters=256, kernel_size=(4,4), padding="valid", activation="relu"))
+model.add(Flatten())
+model.add(Dense(units=1000,activation="relu"))
+model.add(Dense(units=500,activation="relu"))
+model.add(Dense(units=8, activation="softmax"))
+for faetures,lable in testing_data :
+    x_test.append(faetures)
+    y_test.append(lable)
+
+import tensorflow as tf
+y_train = tf.one_hot(indices=y_train, depth=8)
+x_train = np.array(x_train).reshape(-1,224, 224, 3)
+x_test = np.array(x_test).reshape(-1,224, 224, 3)
+
+from keras.optimizers import Adam
+opt = Adam(lr=0.001)
+model.compile(optimizer=opt, loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])
+
+model.summary()
+
+from keras.callbacks import ModelCheckpoint, EarlyStopping
+checkpoint = ModelCheckpoint("vgg16_1.h5", monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=False, mode='auto', period=1)
+early = EarlyStopping(monitor='val_acc', min_delta=0, patience=20, verbose=1, mode='auto')
+hist = model.fit(x_train,y_train,validation_split=0.2,steps_per_epoch=32,validation_steps=10,epochs=3,verbose=1)
+
+plt.plot(hist.history["accuracy"])
+plt.plot(hist.history['val_accuracy'])
+plt.plot(hist.history['loss'])
+plt.plot(hist.history['val_loss'])
+plt.title("model accuracy")
+plt.ylabel("Accuracy")
+plt.xlabel("Epoch")
+plt.legend(["Accuracy","Validation Accuracy","loss","Validation Loss"])
+plt.show()
+
+def prepare(filepath):
+    IMG_SIZE = 224  # 50 in txt-based
+    img_array = cv2.imread(filepath)  # read in the image, convert to grayscale
+    new_array = cv2.resize(img_array, (IMG_SIZE, IMG_SIZE))  # resize image to match model's expected sizing
+    return new_array.reshape(-1, IMG_SIZE, IMG_SIZE, 3)  # return the image with shaping that TF wants.
+    
+from keras.applications.vgg16 import preprocess_input, decode_predictions
+prediction = model.predict([prepare('/Users/leolin/Documents/高中專題/downloads/3/354檔案.jpg')])  # REMEMBER YOU'RE PASSING A LIST OF THINGS YOU WISH TO PREDICT
+print (prediction)
+p=np.argmax(prediction)
+print(CATEGORIES_train[int(p)])
